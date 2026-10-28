@@ -4,6 +4,18 @@ const REFERER = 'https://glados.cloud/console/checkin'
 const ALREADY_CHECKED_IN = /repeat|already|已签到|已经签到|重复/i
 const AUTH_ERROR =
   /没有权限|unauthorized|forbidden|sign[ -]?in|reauthenticate|重新登录|登录|cookie/i
+const PLATFORM_USER_AGENTS = {
+  Windows:
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  macOS:
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  Linux:
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  iPhone:
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+  Android:
+    'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+}
 
 const sleep = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds))
@@ -77,16 +89,35 @@ const glados = async () => {
     const account = `账号 ${index + 1}`
 
     try {
+      let userAgent = PLATFORM_USER_AGENTS.Windows
       const commonHeaders = {
         cookie,
         referer: REFERER,
-        'user-agent': 'Mozilla/5.0',
+        origin: 'https://glados.cloud',
+        accept: 'application/json, text/plain, */*',
+        'user-agent': userAgent,
       }
-      const action = await requestJson(CHECKIN_URL, {
+      let action = await requestJson(CHECKIN_URL, {
         method: 'POST',
         headers: { ...commonHeaders, 'content-type': 'application/json' },
         body: JSON.stringify({ token: 'glados.cloud' }),
       })
+
+      if (Number(action?.code) === 4 && action?.reason === 'device-mismatch') {
+        const loginDevice = String(action?.loginDevice || '')
+        const matchedUserAgent = PLATFORM_USER_AGENTS[loginDevice]
+        if (matchedUserAgent && matchedUserAgent !== userAgent) {
+          console.warn(`${account}: 登录设备为 ${loginDevice}，切换对应平台后重试一次`)
+          userAgent = matchedUserAgent
+          commonHeaders['user-agent'] = userAgent
+          action = await requestJson(CHECKIN_URL, {
+            method: 'POST',
+            headers: { ...commonHeaders, 'content-type': 'application/json' },
+            body: JSON.stringify({ token: 'glados.cloud' }),
+          })
+        }
+      }
+
       const actionMessage = String(action?.message || '签到接口未返回说明')
 
       if (hasFailureCode(action) && !ALREADY_CHECKED_IN.test(actionMessage)) {
