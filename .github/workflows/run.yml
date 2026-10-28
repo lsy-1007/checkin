@@ -1,21 +1,34 @@
-name: run
+name: GLaDOS check-in
 
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
   schedule:
-    - cron: 10 16 * * *
+    # UTC 16:23 = Asia/Shanghai 00:23
+    - cron: "23 16 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: glados-checkin
+  cancel-in-progress: false
 
 jobs:
-  run:
+  checkin:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
       - run: npm ci
-      - run: npm run main
+      - name: Run GLaDOS check-in
+        run: npm run main
         env:
           GLADOS: ${{ secrets.GLADOS }}
           NOTIFY: ${{ secrets.NOTIFY }}
+
