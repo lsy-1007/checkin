@@ -2,7 +2,8 @@ const CHECKIN_URL = 'https://glados.cloud/api/user/checkin'
 const STATUS_URL = 'https://glados.cloud/api/user/status'
 const REFERER = 'https://glados.cloud/console/checkin'
 const ALREADY_CHECKED_IN = /repeat|already|已签到|已经签到|重复/i
-const AUTH_ERROR = /没有权限|unauthorized|forbidden|登录|cookie/i
+const AUTH_ERROR =
+  /没有权限|unauthorized|forbidden|sign[ -]?in|reauthenticate|重新登录|登录|cookie/i
 
 const sleep = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds))
@@ -108,7 +109,7 @@ const glados = async () => {
       failed = true
       const message = error instanceof Error ? error.message : String(error)
       const explanation = AUTH_ERROR.test(message)
-        ? `Cookie 已失效或不完整（${message}）`
+        ? `登录状态失效或触发自动化检测，请重新登录并更新 Cookie（${message}）`
         : message
       details.push(`${account}: Checkin Error`, explanation)
     }
