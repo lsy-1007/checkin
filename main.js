@@ -1,7 +1,8 @@
 const CHECKIN_URL = 'https://glados.cloud/api/user/checkin'
 const STATUS_URL = 'https://glados.cloud/api/user/status'
 const REFERER = 'https://glados.cloud/console/checkin'
-const ALREADY_CHECKED_IN = /repeat|already|已签到|已经签到|重复/i
+const ALREADY_CHECKED_IN =
+  /repeat|already|today'?s observation logged|return tomorrow|已签到|已经签到|重复/i
 const AUTH_ERROR =
   /没有权限|unauthorized|forbidden|sign[ -]?in|reauthenticate|重新登录|登录|cookie/i
 const PLATFORM_USER_AGENTS = {
@@ -222,7 +223,7 @@ const main = async () => {
   const notificationFailed = await notify(result.notice)
   if (result.failed || notificationFailed) {
     console.error(
-      '::error title=GLaDOS check-in failed::请查看日志；若提示 Cookie 失效，请更新 Secret GLADOS'
+      '::error title=GLaDOS check-in failed::请查看上方日志中的具体失败原因'
     )
     process.exitCode = 1
   }
