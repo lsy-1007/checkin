@@ -2,9 +2,6 @@ name: GLaDOS check-in
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
   schedule:
     # UTC 16:23 = Asia/Shanghai 00:23
     - cron: "23 16 * * *"
